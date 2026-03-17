@@ -1,0 +1,1174 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="description" content="メモ感覚のシンプル日記帳">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
+    <link rel="manifest" href="manifest.json">
+    <title>メモ日記</title>
+
+    <style>
+        /* ================================================
+           CSS変数（カラーパレット）
+        ================================================ */
+        :root {
+            --main-bg:    #f0faf5;
+            --card-bg:    #ffffff;
+            --primary:    #3DAA78;
+            --accent:     #52C795;
+            --dark:       #4A665A;
+            --header-bg:  #3DAA78;
+        }
+
+        /* ================================================
+           ベーススタイル
+        ================================================ */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #F7F7F7;
+            color: #2E4039;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: pan-y;
+            overflow-x: hidden;
+        }
+
+        /* ================================================
+           ヘッダー
+           ・タイトルは contenteditable でタップ編集可能
+           ・右端に検索ボタンを絶対配置
+        ================================================ */
+        header {
+            width: calc(100% - 20px);
+            max-width: 500px;
+            align-self: center;
+            border-radius: 16px;
+            box-sizing: border-box;
+            background: var(--header-bg);
+            color: white;
+            padding-top: calc(env(safe-area-inset-top, 20px) + 15px);
+            margin-top: 16px;
+            padding-bottom: 15px;
+            text-align: center;
+            box-shadow: none;
+            margin-bottom: 14px;
+        }
+        #appTitle {
+            font-size: 1.2rem;
+            margin: 0;
+            display: inline-block;
+            padding: 2px 10px;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            border: none;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        #appTitle:focus {
+            background: rgba(255,255,255,0.15);
+            border-radius: 6px;
+            outline: none;
+        }
+        #searchBtn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 10px;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            opacity: 0.9;
+        }
+        #searchBtn:active { opacity: 0.5; }
+        #themeBtn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 10px;
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            opacity: 0.9;
+        }
+        #themeBtn:active { opacity: 0.5; }
+
+
+
+        /* ================================================
+           メインコンテナ
+        ================================================ */
+        .container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0 10px 20px 10px;
+            box-sizing: border-box;
+        }
+
+        /* ================================================
+           カレンダーナビゲーション（月移動ボタン）
+        ================================================ */
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 8px;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            padding: 10px 13px;
+            font-size: 1rem;
+            cursor: pointer;
+            color: var(--nav-color);
+            opacity: 0.8;
+        }
+        .nav-btn:active { opacity: 1; }
+        #calendarHeader {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--dark);
+            letter-spacing: 0.05em;
+        }
+
+        /* ================================================
+           カレンダー本体
+           ・.calendar-container : カード外枠（スワイプ領域）
+           ・.calendar-grid      : 7列グリッド
+           ・.is-animating       : スワイプアニメーション時にJSで付与
+        ================================================ */
+        .calendar-container {
+            background: var(--card-bg);
+            padding: 6px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 2px 12px rgba(61,170,120,0.10);
+            box-sizing: border-box;
+            overflow: hidden;
+            touch-action: pan-y;
+            position: relative;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background-color: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #eee;
+            width: 100%;
+            will-change: transform, opacity;
+        }
+        .is-animating {
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+        }
+
+        /* 曜日ヘッダー行（日曜：赤、土曜：青） */
+        .day-header {
+            background: #F8F9FA;
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 7px 0;
+            text-align: center;
+            color: #5A7A6A;
+            letter-spacing: 0.03em;
+        }
+        .day-header:nth-child(1) { color: #EF5350; }
+        .day-header:nth-child(7) { color: var(--primary); }
+
+        /* 日付セル（縦横比 1:1.5） */
+        .day {
+            background: white;
+            aspect-ratio: 1 / 1.5;
+            display: flex;
+            flex-direction: column;
+            padding: 2px 3px;
+            cursor: pointer;
+            position: relative;
+            justify-content: flex-start;
+            overflow: hidden;
+            box-sizing: border-box;
+            transition: background 0.15s;
+        }
+        .day:active { background: #e0f2ea; }
+        /* 当月外の日（グレーアウト・タップ無効） */
+        .day.other-month {
+            background-color: #f7faf8;
+            color: #ccc;
+            pointer-events: none;
+        }
+
+        /* 日付数字 */
+        .date-num {
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: #5A7A6A;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* メモ冒頭プレビュー（最大3行で省略） */
+        .memo-preview {
+            font-size: 0.55rem;
+            color: #5A7A6A;
+            line-height: 1.3;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            word-break: break-all;
+            margin-top: 1px;
+            width: 100%;
+            text-align: left;
+        }
+
+        /* ================================================
+           アクションボタン群（CSVバックアップ・復元）
+        ================================================ */
+        .action-group {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .btn {
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #fff;
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            transition: opacity 0.15s, transform 0.1s;
+        }
+        .btn:active { opacity: 0.82; }
+        .export-btn { background: #F4845F; }
+        .import-btn { background: var(--primary); }
+
+        /* ================================================
+           モーダル共通
+           ・.modal          : オーバーレイ背景
+           ・.modal-content  : 中央のカード
+           ・.is-sliding     : 日付切替アニメーション時にJSで付与
+        ================================================ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 6px 24px rgba(61,170,120,0.14);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content.is-sliding {
+            transition: transform 0.25s ease-out, opacity 0.25s ease-out;
+        }
+
+        /* ================================================
+           メモ入力欄（モーダル内）
+        ================================================ */
+        textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0 12px 0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            appearance: none;
+            font-family: inherit;
+            background: #fff;
+            resize: none;
+        }
+        textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(82,199,149,0.2);
+        }
+        textarea::placeholder { color: #ccc; }
+
+        /* モーダルボタングループ（中央寄せ・横並び） */
+        .btn-group {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .modal-btn {
+            flex: 0 0 auto;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        .save-btn   { background: var(--primary); color: white; }
+        .clear-btn  { background: #E57373; color: white; }
+        .cancel-btn { background: #ECEFF1; color: #4A665A; }
+
+        /* ================================================
+           検索モーダル
+        ================================================ */
+        #searchInput {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            font-family: inherit;
+            background: #fff;
+            margin: 8px 0 14px 0;
+        }
+        #searchInput:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(82,199,149,0.2);
+        }
+
+        /* 検索結果リスト */
+        .search-results { max-height: 55vh; overflow-y: auto; }
+        .search-result-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: background 0.15s;
+        }
+        .search-result-item:hover,
+        .search-result-item:active  { background: #e8f7ef; }
+        .search-result-date {
+            font-size: 0.8rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        .search-result-text {
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.5;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+        /* キーワードハイライト */
+        .search-result-text em {
+            background: #c8f0db;
+            font-style: normal;
+            border-radius: 2px;
+        }
+        .search-empty {
+            text-align: center;
+            color: #aaa;
+            padding: 30px 0;
+            font-size: 0.95rem;
+        }
+
+        /* ================================================
+           フッター（バックアップ注意書き）
+        ================================================ */
+        .backup-notice {
+            width: 100%;
+            max-width: 500px;
+            margin: 16px 0 24px 0;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid #e3f2fd;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #5A7A6A;
+            line-height: 1.6;
+        }
+
+        /* ユーティリティ */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- ========== ヘッダー ========== -->
+    <!-- タイトルはタップで編集可能（contenteditable） -->
+    <header style="position:relative;">
+        <h1 id="appTitle" contenteditable="true" spellcheck="false">メモ日記</h1>
+        <!-- テーマ切替ボタン（左端） -->
+        <button id="themeBtn" onclick="cycleTheme()" title="テーマ切替">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- 後ろの紙（左下・塗りつぶし） -->
+                <rect x="2" y="6" width="14" height="16" rx="2" fill="currentColor" stroke="none"/>
+                <!-- 前の紙（右上・透過） -->
+                <rect x="6" y="2" width="14" height="16" rx="2" fill="transparent"/>
+            </svg>
+        </button>
+
+        <button id="searchBtn" onclick="openSearch()" title="検索">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="7"/>
+                <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- ========== メインコンテンツ ========== -->
+    <div class="container">
+
+        <!-- カレンダーナビゲーション（月移動） -->
+        <div class="calendar-nav">
+            <button class="nav-btn" onclick="navChangeMonth(-1)">◀</button>
+            <div id="calendarHeader"></div>
+            <button class="nav-btn" onclick="navChangeMonth(1)">▶</button>
+        </div>
+
+        <!-- カレンダー本体（スワイプ領域） -->
+        <div id="calendarSwipeArea" class="calendar-container">
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+
+        <!-- アクションボタン（CSVバックアップ・復元） -->
+        <div class="action-group">
+            <button class="btn export-btn" onclick="exportCSV()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     style="vertical-align:-3px; margin-right:5px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>CSVバックアップ
+            </button>
+            <button class="btn import-btn" onclick="document.getElementById('importFile').click()">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                     fill="none" stroke="currentColor" stroke-width="2.5"
+                     stroke-linecap="round" stroke-linejoin="round"
+                     style="vertical-align:-3px; margin-right:5px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>CSVから復元
+            </button>
+            <!-- ファイル選択（非表示・importCSVから参照） -->
+            <input type="file" id="importFile" style="display:none"
+                   accept=".csv" onchange="importCSV(this)">
+        </div>
+
+    </div><!-- /.container -->
+
+
+    <!-- ========== 日付入力モーダル ========== -->
+    <!-- 背景タップで保存、◀▶ボタンまたはスワイプで前後日へ移動 -->
+    <div id="modal" class="modal" onclick="if(event.target==this)saveData()">
+        <div class="modal-content" id="modalContent">
+
+            <!-- 日付ヘッダー（前後日移動ボタン） -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+                <button onclick="shiftModalDate(-1)"
+                        style="background:none; border:none; font-size:1rem; cursor:pointer; padding:0 8px; color:#ccc;">◀</button>
+                <h3 id="selectedDateText" style="margin:0; color:var(--dark);"></h3>
+                <button onclick="shiftModalDate(1)"
+                        style="background:none; border:none; font-size:1rem; cursor:pointer; padding:0 8px; color:#ccc;">▶</button>
+            </div>
+
+            <!-- メモ入力欄 -->
+            <textarea id="memoInput" rows="12" onfocus="closeKeypad()"></textarea>
+
+            <!-- 操作ボタン（保存・消去・戻る） -->
+            <div class="btn-group">
+                <button class="modal-btn save-btn" onclick="saveData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         style="vertical-align:-3px; margin-right:5px;">
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                        <polyline points="17 21 17 13 7 13 7 21"/>
+                        <polyline points="7 3 7 8 15 8"/>
+                    </svg>保存
+                </button>
+                <button class="modal-btn clear-btn" onclick="clearModalData()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         style="vertical-align:-3px; margin-right:5px;">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                        <path d="M10 11v6"/><path d="M14 11v6"/>
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>消去
+                </button>
+                <button class="modal-btn cancel-btn" onclick="closeModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         style="vertical-align:-3px; margin-right:5px;">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>戻る
+                </button>
+            </div>
+
+        </div>
+    </div><!-- /#modal -->
+
+
+    <!-- ========== 検索モーダル ========== -->
+    <!-- キーワード入力でリアルタイム検索、スペース区切りでAND検索 -->
+    <div id="searchModal" class="modal" onclick="if(event.target==this)closeSearch()">
+        <div class="modal-content">
+
+            <!-- 検索ヘッダー -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/>
+                        <line x1="16.5" y1="16.5" x2="22" y2="22"/>
+                    </svg>検索
+                </h3>
+                <button onclick="closeSearch()"
+                        style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#999; line-height:1;">×</button>
+            </div>
+
+            <!-- 検索入力欄 -->
+            <input type="search" id="searchInput"
+                   placeholder="キーワードを入力…"
+                   oninput="doSearch()" autocomplete="off">
+
+            <!-- 検索結果リスト -->
+            <div class="search-results" id="searchResults">
+                <div class="search-empty">キーワードを入力してください</div>
+            </div>
+
+        </div>
+    </div><!-- /#searchModal -->
+
+
+    <!-- ========== JavaScript ========== -->
+    <script>
+
+        // ================================================
+        // データ・状態変数
+        // ================================================
+        let currentData     = JSON.parse(localStorage.getItem('pachi_data')) || {};
+        let viewDate        = new Date();  // 現在表示中の年月
+        let selectedDateKey = "";          // モーダルで選択中の日付キー（YYYY-MM-DD）
+
+
+        // ================================================
+        // タイトル編集・保存
+        // contenteditable のタイトルをローカルストレージに永続化
+        // ================================================
+        const titleEl    = document.getElementById('appTitle');
+        const savedTitle = localStorage.getItem('app_title_pachi');
+        if (savedTitle) titleEl.innerText = savedTitle;
+        titleEl.addEventListener('blur',    ()  => localStorage.setItem('app_title_pachi', titleEl.innerText));
+        titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
+
+
+
+        // ================================================
+        // テーマ切替
+        // ボタンを押すたびに default ⇔ sky を切り替え
+        // ================================================
+        const THEMES = {
+            default: {
+                type:           'flat',
+                '--main-bg':    '#F7F7F7',
+                '--primary':    '#3498db',
+                '--accent':     '#3498db',
+                '--dark':       '#7f8c8d',
+                '--header-bg':  '#ffffff',
+                '--grid-line':  '#EEE',
+                '--day-header-bg': '#F8F9FA',
+                '--body-color': '#333333',
+                '--hl-color':   '#d6eaf8',
+                '--nav-color':  '#999999',
+                headerText:     'var(--dark)',
+                headerShadow:   '0 3px 10px rgba(0,0,0,0.12)',
+                exportBg:       '#F39800',
+                importBg:       '#3498db',
+                saveBg:         '#3498db',
+            },
+            sky: {
+                type:           'gradient',
+                '--main-bg':    '#e8f4fd',
+                '--primary':    '#2196F3',
+                '--accent':     '#29B6F6',
+                '--dark':       '#546E7A',
+                '--header-from':'#42A5F5',
+                '--header-to':  '#26C6DA',
+                '--grid-line':  '#e3f2fd',
+                '--day-header-bg': '#e3f2fd',
+                '--body-color': '#37474F',
+                '--hl-color':   '#bbdefb',
+                '--nav-color':  '#2196F3',
+                headerText:     'white',
+                headerShadow:   '0 3px 12px rgba(33,150,243,0.3)',
+                exportBg:       'linear-gradient(135deg,#FFA726,#FB8C00)',
+                importBg:       'linear-gradient(135deg,#26C6DA,#00ACC1)',
+                saveBg:         'linear-gradient(135deg,#42A5F5,#1E88E5)',
+            }
+        };
+        const THEME_ORDER = ['default', 'sky'];
+        let currentTheme  = localStorage.getItem('app_theme') || 'default';
+
+        function applyTheme(name) {
+            const t    = THEMES[name] || THEMES.default;
+            const root = document.documentElement;
+
+            // CSS変数をセット（type・headerText等のメタ値は除く）
+            const skipKeys = new Set(['type','headerText','headerShadow','exportBg','importBg','saveBg']);
+            Object.entries(t).forEach(([k, v]) => {
+                if (!skipKeys.has(k)) root.style.setProperty(k, v);
+            });
+
+            // ボディ色
+            document.body.style.backgroundColor = t['--main-bg'];
+            document.body.style.color           = t['--body-color'];
+
+            // ヘッダー背景
+            const header = document.querySelector('header');
+            if (t.type === 'gradient') {
+                header.style.background  = `linear-gradient(135deg, ${t['--header-from']} 0%, ${t['--header-to']} 100%)`;
+            } else {
+                header.style.background  = t['--header-bg'];
+            }
+            header.style.boxShadow = t.headerShadow;
+            header.style.color     = t.headerText;
+            header.querySelectorAll('button, h1').forEach(el => {
+                el.style.color = t.headerText;
+            });
+
+            // グリッド・曜日ヘッダー背景
+            document.querySelectorAll('.calendar-grid').forEach(el => {
+                el.style.backgroundColor = t['--grid-line'];
+                el.style.borderColor     = t['--grid-line'];
+            });
+            document.querySelectorAll('.day-header').forEach(el => {
+                el.style.backgroundColor = t['--day-header-bg'] || t['--grid-line'];
+            });
+
+            // アクションボタン
+            const exportBtn = document.querySelector('.export-btn');
+            const importBtn = document.querySelector('.import-btn');
+            if (exportBtn) exportBtn.style.background = t.exportBg;
+            if (importBtn) importBtn.style.background = t.importBg;
+
+            // 保存ボタン
+            document.querySelectorAll('.save-btn').forEach(el => {
+                el.style.background = t.saveBg;
+            });
+
+            currentTheme = name;
+            localStorage.setItem('app_theme', name);
+        }
+
+        function cycleTheme() {
+            const idx  = THEME_ORDER.indexOf(currentTheme);
+            const next = THEME_ORDER[(idx + 1) % THEME_ORDER.length];
+            applyTheme(next);
+        }
+
+        // 保存テーマを復元
+        applyTheme(currentTheme);
+
+        // ================================================
+        // カレンダースワイプ操作
+        // 水平スワイプで月切替、閾値未満は元位置へ戻す
+        // ================================================
+        let startX = 0, currentX = 0, isDragging = false, isAnimating = false;
+        const swipeArea = document.getElementById('calendarSwipeArea');
+        const grid      = document.getElementById('calendarGrid');
+
+        swipeArea.addEventListener('touchstart', (e) => {
+            if (isAnimating) return;
+            startX     = e.touches[0].clientX;
+            currentX   = startX;
+            isDragging = true;
+            grid.classList.remove('is-animating');
+        }, { passive: true });
+
+        swipeArea.addEventListener('touchmove', (e) => {
+            if (!isDragging || isAnimating) return;
+            currentX = e.touches[0].clientX;
+            grid.style.transform = `translateX(${currentX - startX}px)`;
+        }, { passive: true });
+
+        swipeArea.addEventListener('touchend', () => {
+            if (!isDragging || isAnimating) return;
+            isDragging = false;
+            const diff      = currentX - startX;
+            const threshold = swipeArea.offsetWidth * 0.25;
+            if (Math.abs(diff) > threshold) {
+                // 閾値超えたら月切替
+                isAnimating = true;
+                grid.classList.add('is-animating');
+                completeSwipeAnimation(diff > 0 ? -1 : 1);
+            } else if (diff !== 0) {
+                // 閾値未満はキャンセルして元位置へ戻す
+                grid.classList.add('is-animating');
+                grid.style.transform = 'translateX(0)';
+            }
+        });
+
+
+        // ================================================
+        // 月切替アニメーション
+        // diffMonth: -1（前月）/ +1（翌月）
+        // スライドアウト → 再描画 → スライドインの3段階
+        // ================================================
+        function animateMonthChange(diffMonth) {
+            const containerWidth = swipeArea.offsetWidth;
+            const exitX = diffMonth > 0 ? -containerWidth : containerWidth;
+
+            // ① 現在グリッドをスライドアウト
+            grid.classList.add('is-animating');
+            grid.style.transform = `translateX(${exitX}px)`;
+            grid.style.opacity   = '0';
+
+            setTimeout(() => {
+                // ② 反対側に瞬間移動して月を更新・再描画
+                grid.classList.remove('is-animating');
+                grid.style.transform = `translateX(${-exitX}px)`;
+                viewDate.setMonth(viewDate.getMonth() + diffMonth);
+                requestAnimationFrame(() => {
+                    renderCalendar();
+                    requestAnimationFrame(() => {
+                        // ③ スライドインで表示
+                        grid.classList.add('is-animating');
+                        grid.style.transform = 'translateX(0)';
+                        grid.style.opacity   = '1';
+                        setTimeout(() => { isAnimating = false; }, 300);
+                    });
+                });
+            }, 300);
+        }
+
+        function completeSwipeAnimation(diffMonth) { animateMonthChange(diffMonth); }
+
+        function navChangeMonth(diffMonth) {
+            if (isAnimating) return;
+            isAnimating = true;
+            animateMonthChange(diffMonth);
+        }
+
+
+        // ================================================
+        // カレンダー描画
+        // 曜日ヘッダー → 空白セル → 日付セル → 空白セル の順に構築
+        // ================================================
+        const dayHeaderHtml = [
+            '<div class="day-header">日</div>',
+            '<div class="day-header">月</div>',
+            '<div class="day-header">火</div>',
+            '<div class="day-header">水</div>',
+            '<div class="day-header">木</div>',
+            '<div class="day-header">金</div>',
+            '<div class="day-header">土</div>'
+        ].join('');
+
+        function renderCalendar() {
+            const year  = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+
+            // ヘッダーに「YYYY年 M月」を表示
+            const headerEl = document.getElementById('calendarHeader');
+            if (headerEl) headerEl.innerText = `${year}年 ${month + 1}月`;
+
+            grid.innerHTML = dayHeaderHtml;
+            // 曜日ヘッダーにテーマの背景色を適用
+            const t = THEMES[currentTheme] || THEMES.default;
+            const dayHeaderBg = t['--day-header-bg'] || t['--grid-line'];
+            grid.querySelectorAll('.day-header').forEach(el => {
+                el.style.backgroundColor = dayHeaderBg;
+            });
+            const firstDay = new Date(year, month, 1).getDay();      // 月初の曜日（0=日）
+            const lastDate = new Date(year, month + 1, 0).getDate();  // 月末日
+            const fragment = document.createDocumentFragment();
+
+            // 月初前の空白セル
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'day other-month';
+                fragment.appendChild(empty);
+            }
+
+            // 各日付セル（メモがあれば冒頭プレビューを表示）
+            for (let d = 1; d <= lastDate; d++) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const dayDiv  = document.createElement('div');
+                dayDiv.className = 'day';
+
+                const memo = currentData[dateKey]?.memo?.trim() || '';
+                let html = `<span class="date-num">${d}</span>`;
+                if (memo) {
+                    const preview = memo.replace(/\n/g, ' ');
+                    html += `<div class="memo-preview">${preview}</div>`;
+                }
+
+                dayDiv.innerHTML = html;
+                dayDiv.onclick   = () => openModal(dateKey);
+                fragment.appendChild(dayDiv);
+            }
+
+            // 月末後の空白セル（グリッドを7列に揃える）
+            const totalCells     = firstDay + lastDate;
+            const remainingCells = (7 - (totalCells % 7)) % 7;
+            for (let i = 0; i < remainingCells; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'day other-month';
+                fragment.appendChild(empty);
+            }
+
+            grid.appendChild(fragment);
+        }
+
+
+        // ================================================
+        // 検索機能
+        // ・スペース区切りで複数キーワードAND検索
+        // ・結果タップで該当月に移動してモーダルを開く
+        // ================================================
+        function openSearch() {
+            document.getElementById('searchModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('searchInput').focus(), 100);
+        }
+
+        function closeSearch() {
+            document.getElementById('searchModal').style.display = 'none';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('searchResults').innerHTML =
+                '<div class="search-empty">キーワードを入力してください</div>';
+        }
+
+        function doSearch() {
+            const query     = document.getElementById('searchInput').value.trim();
+            const container = document.getElementById('searchResults');
+
+            if (!query) {
+                container.innerHTML = '<div class="search-empty">キーワードを入力してください</div>';
+                return;
+            }
+
+            const keywords = query.split(/\s+/).filter(Boolean);
+            const results  = Object.keys(currentData)
+                .filter(dateKey => {
+                    const memo = currentData[dateKey]?.memo || '';
+                    return keywords.every(kw => memo.includes(kw));
+                })
+                .sort((a, b) => b.localeCompare(a)); // 新しい日付順
+
+            if (results.length === 0) {
+                container.innerHTML = '<div class="search-empty">該当する日記が見つかりませんでした</div>';
+                return;
+            }
+
+            // キーワードをハイライトして結果を表示
+            container.innerHTML = results.map(dateKey => {
+                const parts = dateKey.split('-');
+                const label = `${parseInt(parts[0])}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+                let text = currentData[dateKey].memo || '';
+                keywords.forEach(kw => {
+                    const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    text = text.replace(new RegExp(escaped, 'g'), `<em>${kw}</em>`);
+                });
+                text = text.replace(/\n/g, ' ');
+                return `<div class="search-result-item" onclick="openFromSearch('${dateKey}')">
+                    <div class="search-result-date">${label}</div>
+                    <div class="search-result-text">${text}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function openFromSearch(dateKey) {
+            closeSearch();
+            // 該当月のカレンダーに移動してからモーダルを開く
+            const d = new Date(dateKey);
+            viewDate = new Date(d.getFullYear(), d.getMonth(), 1);
+            renderCalendar();
+            setTimeout(() => openModal(dateKey), 50);
+        }
+
+
+        // ================================================
+        // 日付入力モーダル
+        // ================================================
+        function openModal(dateKey) {
+            selectedDateKey = dateKey;
+            const parts = dateKey.split('-');
+            document.getElementById('selectedDateText').innerText =
+                `${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+            document.getElementById('memoInput').value =
+                currentData[dateKey]?.memo || "";
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function saveData() {
+            const memo = document.getElementById('memoInput').value;
+            // メモが空の場合はデータを削除
+            if (!memo || memo.trim() === "") {
+                delete currentData[selectedDateKey];
+            } else {
+                currentData[selectedDateKey] = { memo };
+            }
+            localStorage.setItem('pachi_data', JSON.stringify(currentData));
+            closeModal();
+            renderCalendar();
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function clearModalData() {
+            if (!confirm('この日のデータを消去しますか？')) return;
+            delete currentData[selectedDateKey];
+            localStorage.setItem('pachi_data', JSON.stringify(currentData));
+            closeModal();
+            renderCalendar();
+        }
+
+        // メモ欄フォーカス時のダミー関数（将来の拡張用）
+        function closeKeypad() {}
+
+
+        // ================================================
+        // モーダル内の前後日スライド（ボタン操作）
+        // ================================================
+        function shiftModalDate(diff) {
+            const content = document.getElementById('modalContent');
+            const exitX   = diff > 0 ? '-110%' : '110%';
+            const enterX  = diff > 0 ? '110%'  : '-110%';
+
+            // スライドアウト
+            content.classList.add('is-sliding');
+            content.style.transform = `translateX(${exitX})`;
+            content.style.opacity   = '0';
+
+            setTimeout(() => {
+                content.classList.remove('is-sliding');
+                content.style.transform = `translateX(${enterX})`;
+                content.style.opacity   = '0';
+
+                // 日付を更新してモーダルを再描画
+                const d = new Date(selectedDateKey);
+                d.setDate(d.getDate() + diff);
+                const newKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                openModal(newKey);
+
+                // スライドイン
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        content.classList.add('is-sliding');
+                        content.style.transform = 'translateX(0)';
+                        content.style.opacity   = '1';
+                        setTimeout(() => content.classList.remove('is-sliding'), 250);
+                    });
+                });
+            }, 250);
+        }
+
+
+        // ================================================
+        // モーダル内スワイプ（前後日切替）
+        // 水平スワイプ50px超で日付切替、未満はキャンセル
+        // ================================================
+        (function () {
+            const content = document.getElementById('modalContent');
+            let mStartX = 0, mMoved = false;
+
+            content.addEventListener('touchstart', (e) => {
+                mStartX = e.touches[0].clientX;
+                mMoved  = false;
+            }, { passive: true });
+
+            content.addEventListener('touchmove', (e) => {
+                const dx = e.touches[0].clientX - mStartX;
+                if (Math.abs(dx) > 10) {
+                    mMoved = true;
+                    content.style.transform = `translateX(${dx * 0.4}px)`; // 指に軽く追従
+                }
+            }, { passive: true });
+
+            content.addEventListener('touchend', (e) => {
+                if (!mMoved) return;
+                const diff = e.changedTouches[0].clientX - mStartX;
+                if (Math.abs(diff) > 50) {
+                    shiftModalDate(diff > 0 ? -1 : 1);
+                } else {
+                    // キャンセル：元位置へ戻す
+                    content.classList.add('is-sliding');
+                    content.style.transform = 'translateX(0)';
+                    setTimeout(() => content.classList.remove('is-sliding'), 250);
+                }
+                mMoved = false;
+            }, { passive: true });
+        })();
+
+
+        // ================================================
+        // CSVエクスポート
+        // 形式：日付,メモ（BOM付きUTF-8、Excel対応）
+        // ================================================
+        function exportCSV() {
+            let csv = "\uFEFF日付,メモ\n";
+            Object.keys(currentData).sort().forEach(k => {
+                const memo = (currentData[k].memo || "").replace(/"/g, '""');
+                csv += `${k},"${memo}"\n`;
+            });
+            const fileName = `メモ日記_${new Date().toISOString().slice(0, 10)}.csv`;
+            const blob     = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link     = document.createElement('a');
+            link.href      = URL.createObjectURL(blob);
+            link.download  = fileName;
+            link.click();
+        }
+
+
+        // ================================================
+        // CSVインポート
+        // RFC 4180 準拠の1文字ずつパース（クォート内カンマ・改行に対応）
+        // ================================================
+        function parseCSVLine(line) {
+            const cols = [];
+            let cur = '', inQuote = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (inQuote) {
+                    if (ch === '"' && line[i + 1] === '"') { cur += '"'; i++; } // エスケープ引用符
+                    else if (ch === '"') { inQuote = false; }
+                    else { cur += ch; }
+                } else {
+                    if (ch === '"')      { inQuote = true; }
+                    else if (ch === ',') { cols.push(cur); cur = ''; }
+                    else                 { cur += ch; }
+                }
+            }
+            cols.push(cur);
+            return cols;
+        }
+
+        // 日付文字列を「YYYY-MM-DD」形式に正規化
+        function normalizeDateKey(raw) {
+            const s = raw.replace(/^\uFEFF/, "").trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+            if (m) return `${m[1]}-${m[2].padStart(2, '0')}-${m[3].padStart(2, '0')}`;
+            return null;
+        }
+
+        function importCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const text    = e.target.result;
+                    const newData = {};
+                    let count     = 0;
+
+                    // クォート内の改行を考慮しながら行に分割
+                    const lines = [];
+                    let cur = '', inQ = false;
+                    for (let i = 0; i < text.length; i++) {
+                        const ch = text[i];
+                        if (ch === '"') { inQ = !inQ; cur += ch; }
+                        else if (!inQ && (ch === '\n' || (ch === '\r' && text[i + 1] === '\n'))) {
+                            if (ch === '\r') i++;
+                            lines.push(cur); cur = '';
+                        } else { cur += ch; }
+                    }
+                    if (cur) lines.push(cur);
+
+                    // 1行目はヘッダーとして読み飛ばす
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const cols = parseCSVLine(lines[i]);
+                        if (cols.length >= 2) {
+                            const date = normalizeDateKey(cols[0]);
+                            if (date) {
+                                newData[date] = { memo: cols[1] || "" };
+                                count++;
+                            }
+                        }
+                    }
+
+                    if (count > 0 && confirm(count + "件復元しますか？")) {
+                        currentData = newData;
+                        localStorage.setItem('pachi_data', JSON.stringify(currentData));
+                        renderCalendar();
+                        alert("復元完了");
+                    } else if (count === 0) {
+                        alert("復元できるデータが見つかりませんでした。\nファイルの日付形式を確認してください。");
+                    }
+                } catch (err) {
+                    alert("読み込みエラーが発生しました。");
+                }
+            };
+            reader.readAsText(file, "UTF-8");
+            input.value = ""; // 同じファイルを再選択できるようリセット
+        }
+
+
+        // ================================================
+        // 初期描画
+        // ================================================
+        renderCalendar();
+
+    </script>
+
+
+    <!-- ========== フッター（バックアップ注意書き） ========== -->
+    <div class="container">
+        <div class="backup-notice">
+            データはお使いのブラウザ内にのみ保存されています。ブラウザのキャッシュをクリアすると、これまでの記録がすべて消去されてしまいます。
+            万が一に備え、定期的なバックアップをおすすめします。
+        </div>
+    </div>
+
+</body>
+</html>
