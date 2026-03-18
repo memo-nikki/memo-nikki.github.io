@@ -1,0 +1,11 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "io.memonikki.twa",
+      "sha256_cert_fingerprints":
+        ["65:34:31:4B:4F:5A:D8:0E:12:5E:0D:A0:6D:87:32:38:25:4D:49:9B:37:B4:E2:B5:DA:4E:C8:4E:34:31:BF:B2"]
+    }
+  }
+]
