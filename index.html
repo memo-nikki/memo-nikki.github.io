@@ -283,9 +283,9 @@
             height: 100%;
             background: rgba(0,0,0,0.5);
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             z-index: 1000;
-            padding: 15px;
+            padding: 60px 15px 15px;
             box-sizing: border-box;
         }
         .modal-content {
@@ -411,7 +411,7 @@
         .backup-notice {
             width: 100%;
             max-width: 500px;
-            margin: 16px 0 24px 0;
+            margin: 10px 0 10px 0;
             padding: 12px 16px;
             box-sizing: border-box;
             background: rgba(255,255,255,0.7);
@@ -421,9 +421,95 @@
             color: #5A7A6A;
             line-height: 1.6;
         }
+.copy {font-size: 0.75rem;text-align: center;margin-bottom: 15px;}
 
         /* ユーティリティ */
         .hidden { display: none !important; }
+
+        /* ================================================
+           年月ジャンプモーダル
+        ================================================ */
+        #calendarHeader {
+            cursor: pointer;
+            user-select: none;
+            padding: 4px 10px;
+            border-radius: 8px;
+            transition: background 0.15s;
+        }
+        #calendarHeader:active { background: rgba(0,0,0,0.07); }
+
+        #jumpModal .modal-content {
+            max-width: 340px;
+            padding: 24px 20px 20px;
+        }
+        .jump-modal-title {
+            text-align: center;
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--dark);
+            margin-bottom: 18px;
+        }
+        .jump-selectors {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .jump-select {
+            border: 1.5px solid #ddd;
+            border-radius: 10px;
+            padding: 10px 8px;
+            font-size: 1.1rem;
+            font-family: inherit;
+            background: #fff;
+            color: var(--dark);
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            text-align: center;
+        }
+        .jump-select:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(82,199,149,0.2);
+        }
+        .jump-select-year { width: 110px; }
+        .jump-select-month { width: 76px; }
+        .jump-sep {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        .jump-btn-group {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+        .jump-go-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 11px 28px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .jump-go-btn:active { opacity: 0.8; }
+        .jump-cancel-btn {
+            background: #ECEFF1;
+            color: #4A665A;
+            border: none;
+            border-radius: 10px;
+            padding: 11px 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .jump-cancel-btn:active { opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -458,7 +544,7 @@
         <!-- カレンダーナビゲーション（月移動） -->
         <div class="calendar-nav">
             <button class="nav-btn" onclick="navChangeMonth(-1)">◀</button>
-            <div id="calendarHeader"></div>
+            <div id="calendarHeader" onclick="openJumpModal()" title="年月を選択してジャンプ"></div>
             <button class="nav-btn" onclick="navChangeMonth(1)">▶</button>
         </div>
 
@@ -584,7 +670,37 @@
     </div><!-- /#searchModal -->
 
 
-    <!-- ========== JavaScript ========== -->
+    <!-- ========== 年月ジャンプモーダル ========== -->
+    <div id="jumpModal" class="modal" onclick="if(event.target==this)closeJumpModal()">
+        <div class="modal-content">
+            <div class="jump-modal-title">📅 年月を選んでジャンプ</div>
+            <div class="jump-selectors">
+                <select id="jumpYear" class="jump-select jump-select-year"></select>
+                <span class="jump-sep">年</span>
+                <select id="jumpMonth" class="jump-select jump-select-month">
+                    <option value="1">1月</option>
+                    <option value="2">2月</option>
+                    <option value="3">3月</option>
+                    <option value="4">4月</option>
+                    <option value="5">5月</option>
+                    <option value="6">6月</option>
+                    <option value="7">7月</option>
+                    <option value="8">8月</option>
+                    <option value="9">9月</option>
+                    <option value="10">10月</option>
+                    <option value="11">11月</option>
+                    <option value="12">12月</option>
+                </select>
+            </div>
+            <div class="jump-btn-group">
+                <button class="jump-go-btn" onclick="doJump()">ジャンプ</button>
+                <button class="jump-cancel-btn" onclick="closeJumpModal()">キャンセル</button>
+            </div>
+        </div>
+    </div><!-- /#jumpModal -->
+
+
+
     <script>
 
         // ================================================
@@ -1152,6 +1268,75 @@
 
 
         // ================================================
+        // 年月ジャンプ機能
+        // calendarHeaderをタップするとモーダルを開き任意の年月へジャンプ
+        // ================================================
+        function openJumpModal() {
+            const modal = document.getElementById('jumpModal');
+
+            // 年リストを生成（データの最古年〜現在+2年）
+            const yearSel = document.getElementById('jumpYear');
+            yearSel.innerHTML = '';
+            const thisYear = new Date().getFullYear();
+            let minYear = thisYear;
+            Object.keys(currentData).forEach(k => {
+                const y = parseInt(k.split('-')[0]);
+                if (y < minYear) minYear = y;
+            });
+            minYear = Math.min(minYear, thisYear - 5);
+            const maxYear = thisYear + 5;
+            for (let y = minYear; y <= maxYear; y++) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y + '年';
+                if (y === viewDate.getFullYear()) opt.selected = true;
+                yearSel.appendChild(opt);
+            }
+
+            // 現在表示月を初期選択
+            document.getElementById('jumpMonth').value = viewDate.getMonth() + 1;
+
+            modal.style.display = 'flex';
+        }
+
+        function closeJumpModal() {
+            document.getElementById('jumpModal').style.display = 'none';
+        }
+
+        function doJump() {
+            const year  = parseInt(document.getElementById('jumpYear').value);
+            const month = parseInt(document.getElementById('jumpMonth').value) - 1;
+            closeJumpModal();
+            if (isAnimating) return;
+            isAnimating = true;
+            const containerWidth = swipeArea.offsetWidth;
+            const targetDate = new Date(year, month, 1);
+            const diffMs = targetDate - new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+            const diffMonth = diffMs > 0 ? 1 : -1;
+            const exitX = diffMs > 0 ? -containerWidth : containerWidth;
+
+            grid.classList.add('is-animating');
+            grid.style.transform = `translateX(${exitX}px)`;
+            grid.style.opacity   = '0';
+
+            setTimeout(() => {
+                grid.classList.remove('is-animating');
+                grid.style.transform = `translateX(${-exitX}px)`;
+                viewDate = new Date(year, month, 1);
+                requestAnimationFrame(() => {
+                    renderCalendar();
+                    requestAnimationFrame(() => {
+                        grid.classList.add('is-animating');
+                        grid.style.transform = 'translateX(0)';
+                        grid.style.opacity   = '1';
+                        setTimeout(() => { isAnimating = false; }, 300);
+                    });
+                });
+            }, 300);
+        }
+
+
+        // ================================================
         // 初期描画
         // ================================================
         renderCalendar();
@@ -1162,10 +1347,11 @@
     <!-- ========== フッター（バックアップ注意書き） ========== -->
     <div class="container">
         <div class="backup-notice">
-            データはお使いのブラウザ内にのみ保存されています。ブラウザのキャッシュをクリアすると、これまでの記録がすべて消去されてしまいます。
-            万が一に備え、定期的なバックアップをおすすめします。
+            データはお使いのブラウザ内にのみ保存されています。ブラウザのキャッシュをクリアすると、これまでの記録がすべて消去されてしまいます。万が一に備え、定期的なバックアップをおすすめします。
         </div>
     </div>
+
+    <div class="copy">&copy; Material Ekiya</div>
 
 </body>
 </html>
