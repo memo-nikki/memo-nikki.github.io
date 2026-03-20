@@ -544,7 +544,7 @@
         <!-- カレンダーナビゲーション（月移動） -->
         <div class="calendar-nav">
             <button class="nav-btn" onclick="navChangeMonth(-1)">◀</button>
-            <div id="calendarHeader" onclick="openJumpModal()" title="年月を選択してジャンプ"></div>
+            <div id="calendarHeader" onclick="openJumpModal()" title="年月を選択"></div>
             <button class="nav-btn" onclick="navChangeMonth(1)">▶</button>
         </div>
 
@@ -673,7 +673,7 @@
     <!-- ========== 年月ジャンプモーダル ========== -->
     <div id="jumpModal" class="modal" onclick="if(event.target==this)closeJumpModal()">
         <div class="modal-content">
-            <div class="jump-modal-title">📅 年月を選んでジャンプ</div>
+            <div class="jump-modal-title">年月を選択</div>
             <div class="jump-selectors">
                 <select id="jumpYear" class="jump-select jump-select-year"></select>
                 <span class="jump-sep">年</span>
@@ -693,7 +693,7 @@
                 </select>
             </div>
             <div class="jump-btn-group">
-                <button class="jump-go-btn" onclick="doJump()">ジャンプ</button>
+                <button class="jump-go-btn" onclick="doJump()">移動</button>
                 <button class="jump-cancel-btn" onclick="closeJumpModal()">キャンセル</button>
             </div>
         </div>
