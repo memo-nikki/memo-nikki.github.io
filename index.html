@@ -765,6 +765,44 @@
                 importBg:       'linear-gradient(135deg,#26C6DA,#00ACC1)',
                 saveBg:         'linear-gradient(135deg,#42A5F5,#1E88E5)',
             },
+            mint: {
+                type:           'gradient',
+                '--main-bg':    '#f0faf6',
+                '--primary':    '#4caf82',
+                '--accent':     '#7dcfaa',
+                '--dark':       '#2e6b50',
+                '--header-from':'#1AB38E',
+                '--header-to':  '#85DD47',
+                '--grid-line':  '#d8f2e6',
+                '--day-header-bg': '#d8f2e6',
+                '--body-color': '#1e4d38',
+                '--hl-color':   '#c0ecd8',
+                '--nav-color':  '#4caf82',
+                headerText:     'white',
+                headerShadow:   '0 3px 12px rgba(76,175,130,0.28)',
+                exportBg:       'linear-gradient(135deg,#FFA726,#FB8C00)',
+                importBg:       'linear-gradient(135deg,#85DD47,#1AB38E)',
+                saveBg:         'linear-gradient(135deg,#88d8b0,#4caf82)',
+            },
+            himawari: {
+                type:           'gradient',
+                '--main-bg':    '#F7F5E2',
+                '--primary':    '#2196F3',
+                '--accent':     '#ffff00',
+                '--dark':       '#7a5c00',
+                '--header-from':'#F7E142',
+                '--header-to':  '#FFD30C',
+                '--grid-line':  '#fdf0c0',
+                '--day-header-bg': '#ffffcc',
+                '--body-color': '#5a4200',
+                '--hl-color':   '#fdeea0',
+                '--nav-color':  '#FFD30C',
+                headerText:     '#7B5D11',
+                headerShadow:   '0 0px 0px rgba(255,255,255,0)',
+                exportBg:       'linear-gradient(135deg,#F79D7C,#F79D7C)',
+                importBg:       'linear-gradient(135deg,#8FEB75,#8FEB75)',
+                saveBg:         'linear-gradient(135deg,#FFD30C,#FFD30C)',
+            },
             sakura: {
                 type:           'gradient',
                 '--main-bg':    '#fff0f5',
@@ -785,7 +823,7 @@
                 saveBg:         'linear-gradient(135deg,#f48fb1,#e91e8c)',
             },
         };
-        const THEME_ORDER = ['default', 'sky', 'sakura'];
+        const THEME_ORDER = ['default', 'sky', 'mint', 'himawari', 'sakura'];
         let currentTheme  = localStorage.getItem('app_theme') || 'default';
 
         function applyTheme(name) {
