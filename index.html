@@ -706,7 +706,7 @@
         // ================================================
         // データ・状態変数
         // ================================================
-        let currentData     = JSON.parse(localStorage.getItem('pachi_data')) || {};
+        let currentData     = JSON.parse(localStorage.getItem('memo_data')) || {};
         let viewDate        = new Date();  // 現在表示中の年月
         let selectedDateKey = "";          // モーダルで選択中の日付キー（YYYY-MM-DD）
 
@@ -716,9 +716,9 @@
         // contenteditable のタイトルをローカルストレージに永続化
         // ================================================
         const titleEl    = document.getElementById('appTitle');
-        const savedTitle = localStorage.getItem('app_title_pachi');
+        const savedTitle = localStorage.getItem('app_title_memo');
         if (savedTitle) titleEl.innerText = savedTitle;
-        titleEl.addEventListener('blur',    ()  => localStorage.setItem('app_title_pachi', titleEl.innerText));
+        titleEl.addEventListener('blur',    ()  => localStorage.setItem('app_title_memo', titleEl.innerText));
         titleEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } });
 
 
@@ -1068,7 +1068,7 @@
             } else {
                 currentData[selectedDateKey] = { memo };
             }
-            localStorage.setItem('pachi_data', JSON.stringify(currentData));
+            localStorage.setItem('memo_data', JSON.stringify(currentData));
             closeModal();
             renderCalendar();
         }
@@ -1080,7 +1080,7 @@
         function clearModalData() {
             if (!confirm('この日のデータを消去しますか？')) return;
             delete currentData[selectedDateKey];
-            localStorage.setItem('pachi_data', JSON.stringify(currentData));
+            localStorage.setItem('memo_data', JSON.stringify(currentData));
             closeModal();
             renderCalendar();
         }
@@ -1252,7 +1252,7 @@
 
                     if (count > 0 && confirm(count + "件復元しますか？")) {
                         currentData = newData;
-                        localStorage.setItem('pachi_data', JSON.stringify(currentData));
+                        localStorage.setItem('memo_data', JSON.stringify(currentData));
                         renderCalendar();
                         alert("復元完了");
                     } else if (count === 0) {
