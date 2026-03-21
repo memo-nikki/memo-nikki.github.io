@@ -764,9 +764,28 @@
                 exportBg:       'linear-gradient(135deg,#FFA726,#FB8C00)',
                 importBg:       'linear-gradient(135deg,#26C6DA,#00ACC1)',
                 saveBg:         'linear-gradient(135deg,#42A5F5,#1E88E5)',
-            }
+            },
+            sakura: {
+                type:           'gradient',
+                '--main-bg':    '#fff0f5',
+                '--primary':    '#e91e8c',
+                '--accent':     '#f48fb1',
+                '--dark':       '#880e4f',
+                '--header-from':'#f48fb1',
+                '--header-to':  '#e91e8c',
+                '--grid-line':  '#fce4ec',
+                '--day-header-bg': '#fce4ec',
+                '--body-color': '#4a0030',
+                '--hl-color':   '#fce4ec',
+                '--nav-color':  '#e91e8c',
+                headerText:     'white',
+                headerShadow:   '0 3px 12px rgba(233,30,140,0.3)',
+                exportBg:       'linear-gradient(135deg,#f06292,#e91e8c)',
+                importBg:       'linear-gradient(135deg,#f48fb1,#f06292)',
+                saveBg:         'linear-gradient(135deg,#f48fb1,#e91e8c)',
+            },
         };
-        const THEME_ORDER = ['default', 'sky'];
+        const THEME_ORDER = ['default', 'sky', 'sakura'];
         let currentTheme  = localStorage.getItem('app_theme') || 'default';
 
         function applyTheme(name) {
