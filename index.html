@@ -224,6 +224,30 @@
             align-items: center;
             justify-content: center;
             width: 100%;
+            height: 1.9em;
+        }
+
+        /* 今日の日付：数字に丸い背景 */
+        .day.today .date-num {
+            position: relative;
+        }
+        .day.today .date-num::after {
+            content: '';
+            position: absolute;
+            width: 1.8em;
+            height: 1.8em;
+            background: var(--today-circle-bg, var(--day-header-bg, #F8F9FA));
+            border-radius: 50%;
+            z-index: 0;
+            border: 1.5px solid var(--today-circle-border, var(--nav-color, #999));
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .day.today .date-num span {
+            position: relative;
+            z-index: 1;
+            line-height: 1;
         }
 
         /* メモ冒頭プレビュー（最大3行で省略） */
@@ -987,6 +1011,7 @@
             const idx  = THEME_ORDER.indexOf(currentTheme);
             const next = THEME_ORDER[(idx + 1) % THEME_ORDER.length];
             applyTheme(next);
+            renderCalendar();
         }
 
         // 保存テーマを復元
@@ -1114,13 +1139,21 @@
             }
 
             // 各日付セル（メモがあれば冒頭プレビューを表示）
+            const todayKey = (() => {
+                const n = new Date();
+                return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+            })();
             for (let d = 1; d <= lastDate; d++) {
                 const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 const dayDiv  = document.createElement('div');
-                dayDiv.className = 'day';
+                dayDiv.className = 'day' + (dateKey === todayKey ? ' today' : '');
+                if (dateKey === todayKey) {
+                    dayDiv.style.setProperty('--today-circle-bg', dayHeaderBg);
+                    dayDiv.style.setProperty('--today-circle-border', t['--nav-color'] || '#999');
+                }
 
                 const memo = currentData[dateKey]?.memo?.trim() || '';
-                let html = `<span class="date-num">${d}</span>`;
+                let html = `<span class="date-num"><span>${d}</span></span>`;
                 if (memo) {
                     const preview = memo.replace(/\n/g, ' ');
                     html += `<div class="memo-preview">${preview}</div>`;
