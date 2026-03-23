@@ -1480,14 +1480,15 @@
         function openJumpModal() {
             const modal = document.getElementById('jumpModal');
 
-            // 年リストを生成（1900年〜2100年）
+            // 年リストを生成（現在表示年の前後100年）
             const yearSel = document.getElementById('jumpYear');
+            const curYear = viewDate.getFullYear();
             yearSel.innerHTML = '';
-            for (let y = 1900; y <= 2100; y++) {
+            for (let y = curYear - 100; y <= curYear + 100; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y + '年';
-                if (y === viewDate.getFullYear()) opt.selected = true;
+                if (y === curYear) opt.selected = true;
                 yearSel.appendChild(opt);
             }
 
