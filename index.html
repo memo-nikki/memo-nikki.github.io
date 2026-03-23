@@ -406,6 +406,27 @@
         }
 
         /* ================================================
+           フッター（バックアップ注意書き）
+        ================================================ */
+        .backup-notice {
+            width: 100%;
+            max-width: 500px;
+            margin: 10px 0 10px 0;
+            padding: 12px 16px;
+            box-sizing: border-box;
+            background: rgba(255,255,255,0.7);
+            border: 1px solid #e3f2fd;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #5A7A6A;
+            line-height: 1.6;
+        }
+.copy {font-size: 0.75rem;text-align: center;margin-bottom: 15px;}
+
+        /* ユーティリティ */
+        .hidden { display: none !important; }
+
+        /* ================================================
            月リストモーダル
         ================================================ */
         #listBtn {
@@ -452,27 +473,6 @@
             padding: 30px 0;
             font-size: 0.95rem;
         }
-
-        /* ================================================
-           フッター（バックアップ注意書き）
-        ================================================ */
-        .backup-notice {
-            width: 100%;
-            max-width: 500px;
-            margin: 10px 0 10px 0;
-            padding: 12px 16px;
-            box-sizing: border-box;
-            background: rgba(255,255,255,0.7);
-            border: 1px solid #e3f2fd;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            color: #5A7A6A;
-            line-height: 1.6;
-        }
-.copy {font-size: 0.75rem;text-align: center;margin-bottom: 15px;}
-
-        /* ユーティリティ */
-        .hidden { display: none !important; }
 
         /* ================================================
            年月ジャンプモーダル
@@ -800,7 +800,7 @@
             </div>
             <div class="jump-btn-group">
                 <button class="jump-go-btn" onclick="doJump()">移動</button>
-                <button class="jump-cancel-btn" onclick="closeJumpModal()">キャンセル</button>
+                <button class="jump-cancel-btn" onclick="jumpToToday()">今月に戻る</button>
             </div>
         </div>
     </div><!-- /#jumpModal -->
@@ -1480,18 +1480,10 @@
         function openJumpModal() {
             const modal = document.getElementById('jumpModal');
 
-            // 年リストを生成（データの最古年〜現在+2年）
+            // 年リストを生成（1900年〜2100年）
             const yearSel = document.getElementById('jumpYear');
             yearSel.innerHTML = '';
-            const thisYear = new Date().getFullYear();
-            let minYear = thisYear;
-            Object.keys(currentData).forEach(k => {
-                const y = parseInt(k.split('-')[0]);
-                if (y < minYear) minYear = y;
-            });
-            minYear = Math.min(minYear, thisYear - 5);
-            const maxYear = thisYear + 5;
-            for (let y = minYear; y <= maxYear; y++) {
+            for (let y = 1900; y <= 2100; y++) {
                 const opt = document.createElement('option');
                 opt.value = y;
                 opt.textContent = y + '年';
@@ -1507,6 +1499,37 @@
 
         function closeJumpModal() {
             document.getElementById('jumpModal').style.display = 'none';
+        }
+
+        function jumpToToday() {
+            closeJumpModal();
+            const today = new Date();
+            if (isAnimating) return;
+            isAnimating = true;
+            const containerWidth = swipeArea.offsetWidth;
+            const targetDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            const diffMs = targetDate - new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+            if (diffMs === 0) { isAnimating = false; return; }
+            const exitX = diffMs > 0 ? -containerWidth : containerWidth;
+
+            grid.classList.add('is-animating');
+            grid.style.transform = `translateX(${exitX}px)`;
+            grid.style.opacity   = '0';
+
+            setTimeout(() => {
+                grid.classList.remove('is-animating');
+                grid.style.transform = `translateX(${-exitX}px)`;
+                viewDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                requestAnimationFrame(() => {
+                    renderCalendar();
+                    requestAnimationFrame(() => {
+                        grid.classList.add('is-animating');
+                        grid.style.transform = 'translateX(0)';
+                        grid.style.opacity   = '1';
+                        setTimeout(() => { isAnimating = false; }, 300);
+                    });
+                });
+            }, 300);
         }
 
         function doJump() {
