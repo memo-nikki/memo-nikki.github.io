@@ -406,6 +406,54 @@
         }
 
         /* ================================================
+           月リストモーダル
+        ================================================ */
+        #listBtn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 10px;
+            position: absolute;
+            right: 46px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            opacity: 0.9;
+        }
+        #listBtn:active { opacity: 0.5; }
+
+        .list-results { max-height: 60vh; overflow-y: auto; }
+        .list-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: background 0.15s;
+        }
+        .list-item:hover,
+        .list-item:active { background: #e8f7ef; }
+        .list-item-date {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .list-item-text {
+            font-size: 0.9rem;
+            color: #444;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .list-empty {
+            text-align: center;
+            color: #aaa;
+            padding: 30px 0;
+            font-size: 0.95rem;
+        }
+
+        /* ================================================
            フッター（バックアップ注意書き）
         ================================================ */
         .backup-notice {
@@ -528,6 +576,19 @@
             </svg>
         </button>
 
+        <button id="listBtn" onclick="openListModal()" title="月リスト">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/>
+                <line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+        </button>
+
         <button id="searchBtn" onclick="openSearch()" title="検索">
             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
                  fill="none" stroke="currentColor" stroke-width="2.5"
@@ -635,6 +696,51 @@
 
         </div>
     </div><!-- /#modal -->
+
+
+    <!-- ========== 月リストモーダル ========== -->
+    <div id="listModal" class="modal" onclick="if(event.target==this)closeListModal()">
+        <div class="modal-content">
+
+            <!-- リストヘッダー -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h3 style="margin:0; color:var(--dark); display:flex; align-items:center; gap:6px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"/>
+                        <line x1="8" y1="12" x2="21" y2="12"/>
+                        <line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/>
+                        <line x1="3" y1="12" x2="3.01" y2="12"/>
+                        <line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                    <span id="listModalTitleText"></span>
+                </h3>
+                <button onclick="closeListModal()"
+                        style="background:none; border:none; font-size:1.4rem; cursor:pointer; color:#999; line-height:1;">×</button>
+            </div>
+
+            <!-- 月リスト -->
+            <div class="list-results" id="listResults">
+                <div class="list-empty">この月のメモはありません</div>
+            </div>
+
+            <!-- 閉じるボタン -->
+            <div class="btn-group" style="margin-top:14px;">
+                <button class="modal-btn cancel-btn" onclick="closeListModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2.5"
+                         stroke-linecap="round" stroke-linejoin="round"
+                         style="vertical-align:-3px; margin-right:5px;">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>閉じる
+                </button>
+            </div>
+
+        </div>
+    </div><!-- /#listModal -->
 
 
     <!-- ========== 検索モーダル ========== -->
@@ -1321,6 +1427,49 @@
             };
             reader.readAsText(file, "UTF-8");
             input.value = ""; // 同じファイルを再選択できるようリセット
+        }
+
+
+        // ================================================
+        // 月リストモーダル
+        // ================================================
+        function openListModal() {
+            const year  = viewDate.getFullYear();
+            const month = viewDate.getMonth();
+
+            document.getElementById('listModalTitleText').innerText =
+                `${year}年${month + 1}月のメモ`;
+
+            const prefix  = `${year}-${String(month + 1).padStart(2, '0')}-`;
+            const entries = Object.keys(currentData)
+                .filter(k => k.startsWith(prefix) && (currentData[k]?.memo || '').trim())
+                .sort();
+
+            const container = document.getElementById('listResults');
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="list-empty">この月のメモはありません</div>';
+            } else {
+                container.innerHTML = entries.map(dateKey => {
+                    const parts = dateKey.split('-');
+                    const label = `${parseInt(parts[0])}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+                    const text  = (currentData[dateKey].memo || '').trim();
+                    return `<div class="list-item" onclick="openFromList('${dateKey}')">
+                        <div class="list-item-date">${label}</div>
+                        <div class="list-item-text">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            document.getElementById('listModal').style.display = 'flex';
+        }
+
+        function closeListModal() {
+            document.getElementById('listModal').style.display = 'none';
+        }
+
+        function openFromList(dateKey) {
+            closeListModal();
+            setTimeout(() => openModal(dateKey), 50);
         }
 
 
