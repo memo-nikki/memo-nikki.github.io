@@ -1486,7 +1486,7 @@
             } else {
                 container.innerHTML = entries.map(dateKey => {
                     const parts = dateKey.split('-');
-                    const label = `${parseInt(parts[0])}年${parseInt(parts[1])}月${parseInt(parts[2])}日`;
+                    const label = `${parseInt(parts[1])}月${parseInt(parts[2])}日`;
                     const text  = (currentData[dateKey].memo || '').trim();
                     return `<div class="list-item" onclick="openFromList('${dateKey}')">
                         <div class="list-item-date">${label}</div>
